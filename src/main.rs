@@ -1,12 +1,34 @@
-fn main() {
-    println!("Hello, world!");
-    let starting_point: (u8, u8) = (1, 0);
-    let knight_path: Vec<(u8, u8)> = find_chess_knight_path(starting_point, 6, vec![starting_point]).unwrap();
+use std::io;
 
+fn main() {
+    let mut x = String::new();
+    let mut y = String::new();
+    let mut board_size = String::new();
+    let stdin = io::stdin();
+
+    println!("Get knight route");
+    println!("This program shows you the most optimal way, to visit all fields exactly one times\n");
+
+    println!("Enter x position of knight (we count from 0)");
+        stdin.read_line(&mut x).unwrap();
+    println!("Enter y position of knight (we count from 0)");
+        stdin.read_line(&mut y).unwrap();
+    println!("Enter board size (we recommend using board no smaller than 3, and no bigger than 5 (program is really slow when you check for 6 or higher)");
+        stdin.read_line(&mut board_size).unwrap();
+
+    let x: u8 = x.trim().parse::<u8>().expect("You should pass int value");
+    let y: u8 = y.trim().parse::<u8>().expect("You should pass int value");
+    let board_size = board_size.trim().parse::<u8>().expect("You should pass int value");
+
+    let starting_point = (x, y);
+
+    let knight_path: Vec<(u8, u8)> = find_chess_knight_path(starting_point, board_size, vec![starting_point]).unwrap();
+
+    println!("\n\nWe finally got a results:");
     println!("{:?}", knight_path);
 }
 
-fn find_chess_knight_path(knight_position: (u8, u8), board_size: i8, moves_already_done: Vec<(u8, u8)>) -> Option<Vec<(u8, u8)>> {
+fn find_chess_knight_path(knight_position: (u8, u8), board_size: u8, moves_already_done: Vec<(u8, u8)>) -> Option<Vec<(u8, u8)>> {
     let (x, y) = (knight_position.0 as i8, knight_position.1 as i8);
     let possible_moves: Vec<(i8, i8)> = vec![
         (x + 2, y + 1),
@@ -21,7 +43,7 @@ fn find_chess_knight_path(knight_position: (u8, u8), board_size: i8, moves_alrea
 
     let possible_moves = possible_moves
         .into_iter()
-        .filter(|(x, y)| *x >= 0 && *y >= 0 && *x < board_size && *y < board_size)
+        .filter(|(x, y)| *x >= 0 && *y >= 0 && *x < board_size as i8 && *y < board_size as i8)
         .map(|(x, y)| (x as u8, y as u8))
         .filter(|position| !moves_already_done.contains(position));
 
@@ -39,7 +61,8 @@ fn find_chess_knight_path(knight_position: (u8, u8), board_size: i8, moves_alrea
                 path.insert(0, potential_knight_position);
                 path
             } else {
-                println!("one route is check, here results: {:?} \n\n\n", moves_already_done);
+                // Uncomment for logs, comment for performance
+                //println!("one route is checked, here results: {:?} \n\n\n", moves_already_done);
                 vec![potential_knight_position]
             }
         });

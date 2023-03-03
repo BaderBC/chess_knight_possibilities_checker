@@ -22,13 +22,15 @@ fn main() {
 
     let starting_point = (x, y);
 
-    let knight_path: Vec<(u8, u8)> = find_chess_knight_path(starting_point, board_size, vec![starting_point]).unwrap();
+    let knight_path: Vec<(u8, u8)> = find_chess_knight_path(&board_size, vec![starting_point.clone()]).unwrap();
 
     println!("\n\nWe finally got a results:");
     println!("{:?}", knight_path);
 }
 
-fn find_chess_knight_path(knight_position: (u8, u8), board_size: u8, moves_already_done: Vec<(u8, u8)>) -> Option<Vec<(u8, u8)>> {
+fn find_chess_knight_path(board_size: &u8, moves_already_done: Vec<(u8, u8)>) -> Option<Vec<(u8, u8)>> {
+    let knight_position = *moves_already_done.last()
+        .expect("Error, vector with default position should have at least 1 element");
     let (x, y) = (knight_position.0 as i8, knight_position.1 as i8);
     let possible_moves: Vec<(i8, i8)> = vec![
         (x + 2, y + 1),
@@ -43,9 +45,9 @@ fn find_chess_knight_path(knight_position: (u8, u8), board_size: u8, moves_alrea
 
     let possible_moves = possible_moves
         .into_iter()
-        .filter(|(x, y)| *x >= 0 && *y >= 0 && *x < board_size as i8 && *y < board_size as i8)
+        .filter(|(x, y)| *x >= 0 && *y >= 0 && *x < *board_size as i8 && *y < *board_size as i8)
         .map(|(x, y)| (x as u8, y as u8))
-        .filter(|position| !moves_already_done.contains(position));
+        .filter(|position| !moves_already_done.contains(&position));
 
 
     let the_longest_path = possible_moves
@@ -53,17 +55,15 @@ fn find_chess_knight_path(knight_position: (u8, u8), board_size: u8, moves_alrea
             let mut moves_that_will_be_done = moves_already_done.clone();
             moves_that_will_be_done.push(potential_knight_position);
             let path_option = find_chess_knight_path(
-                potential_knight_position,
                 board_size,
                 moves_that_will_be_done,
             );
-            if let Some(mut path) = path_option {
-                path.insert(0, potential_knight_position);
+            if let Some(path) = path_option {
                 path
             } else {
                 // Uncomment for logs, comment for performance
                 //println!("one route is checked, here results: {:?} \n\n\n", moves_already_done);
-                vec![potential_knight_position]
+                moves_already_done.clone()
             }
         });
 

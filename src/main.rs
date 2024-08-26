@@ -1,4 +1,5 @@
 use std::io;
+use rayon::prelude::*;
 
 fn main() {
     let mut x = String::new();
@@ -10,25 +11,25 @@ fn main() {
     println!("This program shows you the most optimal way, to visit all fields exactly one times\n");
 
     println!("Enter x position of knight (we count from 0)");
-        stdin.read_line(&mut x).unwrap();
+    stdin.read_line(&mut x).unwrap();
     println!("Enter y position of knight (we count from 0)");
-        stdin.read_line(&mut y).unwrap();
+    stdin.read_line(&mut y).unwrap();
     println!("Enter board size (we recommend using board no smaller than 3, and no bigger than 5 (program is really slow when you check for 6 or higher)");
-        stdin.read_line(&mut board_size).unwrap();
+    stdin.read_line(&mut board_size).unwrap();
 
-    let x: u8 = x.trim().parse::<u8>().expect("You should pass int value");
-    let y: u8 = y.trim().parse::<u8>().expect("You should pass int value");
+    let x: u8 = x.trim().parse::<u8>().unwrap_or(0);
+    let y: u8 = y.trim().parse::<u8>().unwrap_or(0);
     let board_size = board_size.trim().parse::<u8>().expect("You should pass int value");
 
     let starting_point = (x, y);
 
-    let knight_path: Vec<(u8, u8)> = find_chess_knight_path(&board_size, vec![starting_point.clone()]).unwrap();
+    let knight_path: Vec<(u8, u8)> = find_chess_knight_path(board_size, vec![starting_point.clone()]).unwrap();
 
     println!("\n\nWe finally got a results:");
     println!("{:?}", knight_path);
 }
 
-fn find_chess_knight_path(board_size: &u8, moves_already_done: Vec<(u8, u8)>) -> Option<Vec<(u8, u8)>> {
+fn find_chess_knight_path(board_size: u8, moves_already_done: Vec<(u8, u8)>) -> Option<Vec<(u8, u8)>> {
     let knight_position = *moves_already_done.last()
         .expect("Error, vector with default position should have at least 1 element");
     let (x, y) = (knight_position.0 as i8, knight_position.1 as i8);
@@ -43,30 +44,22 @@ fn find_chess_knight_path(board_size: &u8, moves_already_done: Vec<(u8, u8)>) ->
         (x - 1, y - 2)
     ];
 
-    let possible_moves = possible_moves
+    let possible_moves: Vec<(u8, u8)> = possible_moves
         .into_iter()
-        .filter(|(x, y)| *x >= 0 && *y >= 0 && *x < *board_size as i8 && *y < *board_size as i8)
+        .filter(|(x, y)| *x >= 0 && *y >= 0 && *x < board_size as i8 && *y < board_size as i8)
         .map(|(x, y)| (x as u8, y as u8))
-        .filter(|position| !moves_already_done.contains(&position));
-
-
+        .filter(|position| !moves_already_done.contains(&position))
+        .collect();
+    
     let the_longest_path = possible_moves
-        .map(|potential_knight_position| {
+        .par_iter()  // Parallel iterator
+        .map(|&potential_knight_position| {
             let mut moves_that_will_be_done = moves_already_done.clone();
             moves_that_will_be_done.push(potential_knight_position);
-            let path_option = find_chess_knight_path(
-                board_size,
-                moves_that_will_be_done,
-            );
-            if let Some(path) = path_option {
-                path
-            } else {
-                // Uncomment for logs, comment for performance
-                //println!("one route is checked, here results: {:?} \n\n\n", moves_already_done);
-                moves_already_done.clone()
-            }
-        });
+            find_chess_knight_path(board_size, moves_that_will_be_done.clone())
+                .unwrap_or_else(|| moves_that_will_be_done)
+        })
+        .max_by_key(|vec| vec.len());
 
     the_longest_path
-        .max_by_key(|vec| vec.len())
 }
